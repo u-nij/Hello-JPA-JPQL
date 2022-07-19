@@ -4,6 +4,7 @@ package jpql;
 import jdk.swing.interop.SwingInterOpUtils;
 
 import javax.persistence.*;
+import java.util.Collection;
 import java.util.List;
 
 public class JpaMain {
@@ -114,7 +115,7 @@ public class JpaMain {
 */
 
 
-            
+/*
             Team team = new Team();
             team.setName("teamA");
             em.persist(team);
@@ -212,10 +213,218 @@ public class JpaMain {
                 System.out.println("s = " + s);
             }
 
+
             // 사용자 정의 함수 호출
 
 
+            // 경로 표현식
+            // 단일 값 연관 경로
+            String query17 = "select m.team From Member m"; // member에 연관된 team을 가져옴
+            List<Team> resultList11 = em.createQuery(query17, Team.class).getResultList();
+            for (Team t : resultList11) {
+                System.out.println("t = " + t);
+            }
 
+            // 컬렉션 값 연관 경로
+            String query18 = "select t.members From Team t";
+            List<Collection> resultList12 = em.createQuery(query18, Collection.class)
+                    .getResultList(); // 실제로 이렇게 쓰지 않음
+            System.out.println("resultList12 = " + resultList12);
+
+
+            String query19 = "select t.members.size From Team t";
+            Integer singleResult = em.createQuery(query19, Integer.class)
+                    .getSingleResult();
+            System.out.println("singleResult = " + singleResult);
+
+            // 명시적 조인
+            String query20 = "select m.username From Team t join t.members m";
+            List<String> resultList13 = em.createQuery(query20, String.class).getResultList();
+            System.out.println("resultList13 = " + resultList13);
+*/
+
+
+            // 페치 조인인
+           Team teamA = new Team();
+            teamA.setName("팀A");
+            em.persist(teamA);
+
+            Team teamB = new Team();
+            teamB.setName("팀B");
+            em.persist(teamB);
+
+            Member member1 = new Member();
+            member1.setUsername("회원1");
+            member1.setTeam(teamA);
+            em.persist(member1);
+
+            Member member2 = new Member();
+            member2.setUsername("회원2");
+            member2.setTeam(teamA);
+            em.persist(member2);
+
+            Member member3 = new Member();
+            member3.setUsername("회원3");
+            member3.setTeam(teamB);
+            em.persist(member3);
+
+            em.flush();
+            em.clear();
+
+
+            // 컬렉션 페치 조인
+            String query21 = "select m from Member m join fetch m.team";
+            List<Member> resultList14 = em.createQuery(query21, Member.class)
+                    .getResultList();
+            for (Member member : resultList14) {
+                System.out.println("username = " + member.getUsername() +
+                        ", teamName = " + member.getTeam().getName());
+            }
+
+
+            // 중복 제거
+            String query22 = "select t from Team t join fetch t.members where t.name='팀A'";
+            List<Team> resultList15 = em.createQuery(query22, Team.class)
+                    .getResultList();
+            for (Team team : resultList15) {
+                System.out.println("username = " + team.getName() +
+                        " | team = " + team);
+                for (Member member : team.getMembers()) {
+                    System.out.println("-> username = " + member.getUsername() +
+                            ", member = " + member);
+                }
+            }
+
+            // 중복 제거
+            String query23 = "select distinct t from Team t join fetch t.members where t.name='팀A'";
+            List<Team> resultList16 = em.createQuery(query23, Team.class)
+                    .getResultList();
+            System.out.println("result = " + resultList16.size());
+            for (Team team : resultList16) {
+                System.out.println("username = " + team.getName() +
+                        " | team = " + team);
+                for (Member member : team.getMembers()) {
+                    System.out.println("-> username = " + member.getUsername() +
+                            ", member = " + member);
+                }
+            }
+
+
+            // 페치 조인과 일반 조인의 차이
+            // 일반 조인
+            String query24 = "select t from Team t join t.members m where t.name='팀A'";
+            List<Team> resultList17 = em.createQuery(query24, Team.class)
+                    .getResultList();
+
+            System.out.println("result = " + resultList17.size());
+
+            for (Team team : resultList17) {
+                System.out.println("username = " + team.getName() +
+                        " | team = " + team);
+                for (Member member : team.getMembers()) {
+                    System.out.println("-> username = " + member.getUsername() +
+                            ", member = " + member);
+                }
+            }
+
+
+            // 페이징 API
+            String query25 = "select t from Team t join fetch t.members m";
+//            List<Team> resultList18 = em.createQuery(query25, Team.class)
+//                    .setFirstResult(0)
+//                    .setMaxResults(1)
+//                    .getResultList(); // 쿼리를 보면, 페이징을 하지 않음
+//
+//            System.out.println("result = " + resultList18.size());
+//
+//            for (Team team : resultList18) {
+//                System.out.println("username = " + team.getName() +
+//                        " | team = " + team);
+//                for (Member member : team.getMembers()) {
+//                    System.out.println("-> username = " + member.getUsername() +
+//                            ", member = " + member);
+//                }
+//            }
+
+            // 다대일로 뒤집음
+            String query26 = "select m from Member m join fetch m.team t";
+
+            em.flush();
+            em.clear();
+
+            // 다른 방법
+            String query27 = "select t from Team t";
+            List<Team> resultList19 = em.createQuery(query27, Team.class)
+                    .setFirstResult(0)
+                    .setMaxResults(2)
+                    .getResultList();
+
+            System.out.println("result = " + resultList19.size());
+
+            for (Team team : resultList19) {
+                System.out.println("username = " + team.getName() +
+                        " | team = " + team);
+                for (Member member : team.getMembers()) {
+                    System.out.println("-> username = " + member.getUsername() +
+                            ", member = " + member);
+                }
+            }
+
+
+            // 엔티티 직접 사용 - 기본 키 값
+            // 엔티티를 파라미터로 전달
+            String query28 = "select m from Member m where m = :member";
+            Member findMember2 = em.createQuery(query28, Member.class)
+                    .setParameter("member", member1)
+                    .getSingleResult();
+            System.out.println("findMember2 = " + findMember2);
+
+            // 식별자를 직접 전달
+            String query29 = "select m from Member m where m.id = :memberId";
+            Member findMember3 = em.createQuery(query29, Member.class)
+                    .setParameter("memberId", member1.getId())
+                    .getSingleResult();
+            System.out.println("findMember3 = " + findMember3);
+
+
+            // 엔티티 직접 사용 - 외래 키 값
+            String query30 = "select m from Member m where m.team = :team";
+            List<Member> resultList20 = em.createQuery(query30, Member.class)
+                    .setParameter("team", teamA)
+                    .getResultList();
+            for (Member member : resultList20) {
+                System.out.println("member = " + member);
+            }
+
+
+            // Named 쿼리
+            List<Member> resultList21 = em.createNamedQuery("Member.findByUsername", Member.class)
+                    .setParameter("username", "회원1")
+                    .getResultList();
+            for (Member member : resultList21) {
+                System.out.println("member = " + member);
+            }
+
+//            em.flush();
+//            em.clear();
+
+            // 벌크연산
+            // FLUSH 자동 호출
+            // flush는 commit, query가 나갈 때 자동호출하거나 강제호출해 사용할 수 있다
+            // flush가 나가고 update문이 나가기 때문에 영속성 컨텍스트에 있는 것에 대해 고민하지 않아도 된다.
+            int resultCount = em.createQuery("update Member m set m.age = 20")
+                    .executeUpdate(); // DB에 강제로 업데이트
+            // DB에만 업데이트됨
+            System.out.println("resultCount = " + resultCount);
+            // 영속성 컨텍스트엔 20살이 반영되어있지 않음
+            System.out.println("member1.getAge() = " + member1.getAge());
+            System.out.println("member1.getAge() = " + member2.getAge());
+            System.out.println("member1.getAge() = " + member3.getAge());
+
+            // 영속성 초기화 후 다시 값 불러옴
+            em.clear();
+            Member member = em.find(Member.class, member1.getId());
+            System.out.println("member.getAge() = " + member.getAge());
 
             tx.commit();
         } catch (Exception e) {
